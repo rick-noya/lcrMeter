@@ -1,0 +1,25 @@
+# Python cache and compiled files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Virtual environment
+venv/
+env/
+
+# Distribution / packaging
+build/
+dist/
+*.egg-info/
+
+# PyInstaller
+*.spec
+
+# Logs and temporary files
+pip-log.txt
+pip-delete-this-directory.txt
+*.log
+
+# IDE and editor folders
+.vscode/
+.idea/
