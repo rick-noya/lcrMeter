@@ -29,7 +29,7 @@ LCR-Meter-Project
 
 1. Clone the repository:
    ```
-   git clone <repository-url>
+   git clone https://github.com/rick-noya/lcrMeter
    ```
 2. Navigate to the project directory:
    ```
