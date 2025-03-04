@@ -15,7 +15,7 @@ LOG_FORMAT = '%(asctime)s - %(levelname)s - %(name)s - %(message)s'
 LOG_FILE = "lcr_meter.log"
 
 # Default measurement settings
-DEFAULT_FREQUENCY = 1000
+DEFAULT_FREQUENCY = 100000
 DEFAULT_VOLTAGE = 1.0
 DEFAULT_TIMEOUT = 10000
 DEFAULT_RESOURCE = "USB0::0x2A8D::0x2F01::MY54414986::0::INSTR"

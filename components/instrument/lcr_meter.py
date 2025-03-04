@@ -1,6 +1,6 @@
 import asyncio
 import logging
-import pyvisa
+import pyvisa as visa  # Updated import to match example
 from typing import List, Tuple, Dict, Any
 
 logger = logging.getLogger(__name__)
@@ -8,7 +8,7 @@ logger = logging.getLogger(__name__)
 class LCRMeter:
     """
     Class to interact with an LCR meter instrument using VISA.
-    Provides methods for configuration and measurement.
+    Provides methods for configuration and Ls-Rs measurement.
     """
     
     def __init__(self, resource_name: str, timeout: int = 10000):
@@ -25,10 +25,19 @@ class LCRMeter:
             bool: True if connection successful, False otherwise
         """
         try:
-            self.rm = pyvisa.ResourceManager()
+            self.rm = visa.ResourceManager()
             self.instrument = self.rm.open_resource(self.resource_name)
             self.instrument.timeout = self.timeout
             logger.info(f"Connected to instrument: {self.resource_name}")
+            
+            # Check instrument identity (useful for debugging)
+            idn = self.instrument.query("*IDN?")
+            logger.info(f"Instrument identification: {idn.strip()}")
+            
+            # Initialize to Ls-Rs mode explicitly at startup
+            # Using the exact syntax from the example code
+            await self.set_ls_rs_mode()
+            
             return True
         except Exception as e:
             logger.error(f"Failed to connect to instrument: {e}")
@@ -56,10 +65,9 @@ class LCRMeter:
             return False
             
         try:
-            self.instrument.write(f"FREQ {frequency}")
+            # Use the exact syntax from the example for frequency
+            self.instrument.write(':FREQuency:CW %G' % (frequency))
             self.instrument.write(f"VOLT {voltage}")
-            self.instrument.write("TRIG:SOUR BUS")
-            self.instrument.write("TRIG:IMM")
             await asyncio.sleep(0.1)  # Allow settings to take effect
             logger.debug(f"Configured instrument: Freq={frequency}Hz, Volt={voltage}V")
             return True
@@ -67,88 +75,71 @@ class LCRMeter:
             logger.error(f"Error configuring instrument: {e}")
             return False
             
-    async def measure_ls_rs(self) -> Tuple[float, float]:
+    async def set_ls_rs_mode(self) -> bool:
+        """Explicitly set the instrument to Ls-Rs mode using the example code pattern."""
+        try:
+            # Use the exact syntax from the example code
+            type = 'LSRS'
+            self.instrument.write(':FUNCtion:IMPedance:TYPE %s' % (type))
+            await asyncio.sleep(0.2)
+            
+            # Verify the settings were applied by querying the current mode
+            func_type = self.instrument.query(":FUNCtion:IMPedance:TYPE?").strip()
+            
+            if func_type == "L" or func_type == "LSRS":
+                logger.info("Successfully set instrument to Ls-Rs mode")
+                return True
+            else:
+                logger.error(f"Failed to set Ls-Rs mode. Current mode: {func_type}")
+                return False
+        except Exception as e:
+            logger.error(f"Error setting Ls-Rs mode: {e}")
+            return False
+    
+    async def measure_ls_rs(self, max_retries: int = 3) -> Tuple[float, float]:
         """
         Measure series inductance and resistance.
         
+        Args:
+            max_retries: Maximum number of retries on error
+            
         Returns:
-            Tuple[float, float]: Inductance in µH and resistance in Ohms
+            Tuple of (inductance in H, resistance in Ω)
         """
-        try:
-            self.instrument.write(":FUNCtion:IMPedance:TYPE L")
-            await asyncio.sleep(0.1)
-            result = await asyncio.to_thread(self.instrument.query, "FETCH?")
-            values = result.strip().split(',')
-            if len(values) >= 2:
-                L = float(values[0]) * 1e6  # Convert H to µH
-                Rs = float(values[1])
-                return (L, Rs)
-            else:
-                logger.warning("Unexpected response format for Ls-Rs")
-                return (0, 0)
-        except Exception as e:
-            logger.error(f"Error measuring Ls-Rs: {e}")
-            return (0, 0)
-
-    async def measure_cs_rs(self) -> Tuple[float, float]:
-        """
-        Measure series capacitance and resistance.
-        
-        Returns:
-            Tuple[float, float]: Capacitance in nF and resistance in Ohms
-        """
-        try:
-            self.instrument.write(":FUNCtion:IMPedance:TYPE C")
-            await asyncio.sleep(0.1)
-            result = await asyncio.to_thread(self.instrument.query, "FETCH?")
-            values = result.strip().split(',')
-            if len(values) >= 2:
-                Cs = float(values[0]) * 1e9  # Convert F to nF
-                Rs = float(values[1])
-                return (Cs, Rs)
-            else:
-                logger.warning("Unexpected response format for Cs-Rs")
-                return (0, 0)
-        except Exception as e:
-            logger.error(f"Error measuring Cs-Rs: {e}")
-            return (0, 0)
-
-    async def measure_cp_rp(self) -> Tuple[float, float]:
-        """
-        Measure parallel capacitance and resistance.
-        
-        Returns:
-            Tuple[float, float]: Capacitance in nF and resistance in Ohms
-        """
-        try:
-            self.instrument.write(":FUNCtion:IMPedance:TYPE C")
-            self.instrument.write(":CALCulate:IMPedance:CIRcuit PARallel")
-            await asyncio.sleep(0.1)
-            result = await asyncio.to_thread(self.instrument.query, "FETCH?")
-            values = result.strip().split(',')
-            if len(values) >= 2:
-                Cp = float(values[0]) * 1e9  # Convert F to nF
-                Rp = float(values[1])
-                return (Cp, Rp)
-            else:
-                logger.warning("Unexpected response format for Cp-Rp")
-                return (0, 0)
-        except Exception as e:
-            logger.error(f"Error measuring Cp-Rp: {e}")
-            return (0, 0)
-
-    async def measure_resistance(self) -> float:
-        """
-        Perform a four-terminal resistance measurement.
-        
-        Returns:
-            float: Resistance value in Ohms
-        """
-        try:
-            self.instrument.write(":MEASure:RESistance?")
-            await asyncio.sleep(0.1)
-            ohm_result = await asyncio.to_thread(self.instrument.read)
-            return float(ohm_result.strip())
-        except Exception as e:
-            logger.error(f"Error measuring 4pt Ohm: {e}")
-            return 0
+        retry_count = 0
+        while retry_count <= max_retries:
+            try:
+                # Make sure we're in the correct mode
+                if retry_count > 0:
+                    await self.set_ls_rs_mode()  # Re-set the mode if this is a retry
+                
+                # Trigger a new measurement
+                self.instrument.write(":INIT:IMM")
+                await asyncio.sleep(0.5)  # Give time for the measurement
+                
+                # Now fetch the measurement
+                result = self.instrument.query("FETCH?")
+                logger.debug(f"Raw measurement result: {result.strip()}")
+                
+                values = result.strip().split(',')
+                if len(values) >= 2:
+                    # Use the raw value in henries without conversion
+                    L = float(values[0])  # Keep in henries (H)
+                    Rs = float(values[1])
+                    
+                    # Basic sanity check on values (adjust thresholds as needed)
+                    if L < 0 or Rs < 0 or L > 1e6 or Rs > 1e6:
+                        raise ValueError(f"Measurement values out of expected range: L={L} H, Rs={Rs} Ω")
+                    
+                    return L, Rs
+                raise ValueError(f"Unexpected response format from LCR meter: {result}")
+                
+            except Exception as e:
+                retry_count += 1
+                logger.warning(f"Measurement error (attempt {retry_count}/{max_retries+1}): {str(e)}")
+                
+                if retry_count <= max_retries:
+                    await asyncio.sleep(1.0)  # Longer delay before retry
+                else:
+                    logger.error(f"Failed to measure Ls-Rs after {max_retries+1} attempts: {str(e)}")
+                    return 0, 0  # Return zeros on complete failure

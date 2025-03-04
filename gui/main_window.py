@@ -65,7 +65,7 @@ class MainWindow(QMainWindow):
         # Info label at the top
         self.info_label = QLabel(
             "Enter Sample Name, Resource, Frequency, Voltage, Timeout.\n"
-            "Test Sequence: Ls-Rs, Cs-Rs, Cp-Rp, 4pt Ohm"
+            "Test Type: Ls-Rs (Series Inductance and Resistance)"
         )
         self.info_label.setAlignment(Qt.AlignCenter)
         layout.addWidget(self.info_label)
@@ -94,7 +94,7 @@ class MainWindow(QMainWindow):
         # Add start button
         btn_layout = QHBoxLayout()
         layout.addLayout(btn_layout)
-        self.start_button = QPushButton("Start")
+        self.start_button = QPushButton("Start Ls-Rs Measurement")
         self.start_button.setStyleSheet(START_BUTTON_STYLESHEET)
         self.start_button.clicked.connect(self.on_start_sequence)
         btn_layout.addWidget(self.start_button)
@@ -260,7 +260,7 @@ class MainWindow(QMainWindow):
         
         try:
             # Run the measurement sequence
-            self.append_log(f"Starting test sequence for sample: {sample_name}")
+            self.append_log(f"Starting Ls-Rs measurement for sample: {sample_name}")
             
             # Create LCR meter instance
             lcr_meter = LCRMeter(resource_name, timeout)
@@ -271,6 +271,9 @@ class MainWindow(QMainWindow):
                 QMessageBox.critical(self, "Connection Error", "Failed to connect to the LCR meter.")
                 self.start_button.setEnabled(True)
                 return
+            
+            # Configure the instrument with the specified frequency and voltage
+            await lcr_meter.configure(frequency, voltage)
                 
             # Run measurement sequence and get results
             results = await run_measurement_sequence(
@@ -280,7 +283,10 @@ class MainWindow(QMainWindow):
             # Update data and log
             self.lcr_data.extend(results)
             for row in results:
-                self.append_log(f"{row[2]}: {row[3]}, {row[4]}")
+                test_type = row[2]
+                L_value = row[3]
+                Rs_value = row[4]
+                self.append_log(f"{test_type}: L={L_value} H, Rs={Rs_value} Ω")
                 
             # Upload data
             await upload_data(self)

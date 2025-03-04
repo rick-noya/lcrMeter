@@ -1,4 +1,4 @@
-import sys
+import sys  # Make sure this is here
 import os
 import asyncio
 from PyQt5.QtWidgets import QApplication

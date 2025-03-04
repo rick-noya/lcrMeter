@@ -12,7 +12,7 @@ async def run_measurement_sequence(
     tester_name: str
 ) -> List[List[Any]]:
     """
-    Run the complete measurement sequence on the LCR meter.
+    Run a single Ls-Rs measurement on the LCR meter.
     
     Args:
         lcr_meter: Initialized LCR meter instance
@@ -21,38 +21,26 @@ async def run_measurement_sequence(
         
     Returns:
         List of measurement data rows in the format:
-        [timestamp, sample_name, test_type, value1, value2]
+        [timestamp, sample_name, test_type, value1, value2, tester_name]
     """
     results = []
     timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-    logger.info(f"Starting measurement sequence for sample: {sample_name}, tester: {tester_name}")
+    logger.info(f"Starting Ls-Rs measurement for sample: {sample_name}, tester: {tester_name}")
     
     try:
-        # --- Test 1: Ls-Rs (Series Inductance & Resistance) ---
+        # Ensure we're in Ls-Rs mode
+        await lcr_meter.set_ls_rs_mode()
+        
+        # Take a single measurement
         L, Rs = await lcr_meter.measure_ls_rs()
-        results.append([timestamp, sample_name, "Ls-Rs", f"{L:.3f} µH", f"{Rs:.3f} Ω"])
-        logger.debug(f"Ls-Rs measurement: {L:.3f} µH, {Rs:.3f} Ω")
         
-        # --- Test 2: Cs-Rs (Series Capacitance & Resistance) ---
-        Cs, Rs = await lcr_meter.measure_cs_rs()
-        results.append([timestamp, sample_name, "Cs-Rs", f"{Cs:.3f} nF", f"{Rs:.3f} Ω"])
-        logger.debug(f"Cs-Rs measurement: {Cs:.3f} nF, {Rs:.3f} Ω")
+        # Log the measurement result
+        logger.debug(f"Measurement: L={L:.3e} H, Rs={Rs:.3e} Ω")
         
-        # --- Test 3: Cp-Rp (Parallel Capacitance & Resistance) ---
-        Cp, Rp = await lcr_meter.measure_cp_rp()
-        results.append([timestamp, sample_name, "Cp-Rp", f"{Cp:.3f} nF", f"{Rp:.3f} Ω"])
-        logger.debug(f"Cp-Rp measurement: {Cp:.3f} nF, {Rp:.3f} Ω")
+        # Store the result
+        results.append([timestamp, sample_name, "Ls-Rs", f"{L:.3e}", f"{Rs:.3e}", tester_name])
         
-        # --- Test 4: 4pt Ohm (Four-terminal resistance measurement) ---
-        ohm_result = await lcr_meter.measure_resistance()
-        results.append([timestamp, sample_name, "4pt Ohm", f"{ohm_result:.3f} Ω", ""])
-        logger.debug(f"4pt Ohm measurement: {ohm_result:.3f} Ω")
-        
-        # Add tester name to each row
-        for row in results:
-            row.append(tester_name)
-            
-        logger.info("Measurement sequence completed successfully")
+        logger.info("Ls-Rs measurement completed successfully")
         return results
         
     except Exception as e:
