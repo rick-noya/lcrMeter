@@ -1,8 +1,8 @@
-# LCR Meter Project
+# LCR Meter
 
 ## Overview
 
-The LCR Meter Project is a Python application designed to accurately perform inductance measurements on Noya's sorbent. Leveraging a PyQt5-based GUI, the app allows users to input test parameters and record measurement data directly to Google Sheets, ensuring efficient and reliable analysis for quality control and research.
+The LCR Meter is a Python application designed to accurately perform inductance measurements on Noya's sorbent. Leveraging a PyQt5-based GUI, the app allows users to input test parameters and record measurement data directly to Google Sheets, ensuring efficient and reliable analysis for quality control and research.
 
 ## Project Structure
 
