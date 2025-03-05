@@ -52,7 +52,7 @@ class MainWindow(QMainWindow):
         self.setStatusBar(self.statusBar)
         
         # Schedule asynchronous loading of sample names
-        QTimer.singleShot(0, lambda: asyncio.create_task(self.load_sample_names()))
+        QTimer.singleShot(100, self.init_async_tasks)  # Use a small delay
 
     def _setup_ui(self):
         """Set up the UI components."""
@@ -297,3 +297,11 @@ class MainWindow(QMainWindow):
         finally:
             # Re-enable start button
             self.start_button.setEnabled(True)
+
+    def init_async_tasks(self):
+        try:
+            asyncio.create_task(self.load_sample_names())
+        except RuntimeError:
+            # Fallback if no running event loop
+            logging.warning("No running event loop, scheduling task for later")
+            QTimer.singleShot(500, self.init_async_tasks)  # Try again after event loop starts

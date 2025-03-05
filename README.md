@@ -2,7 +2,7 @@
 
 ## Overview
 
-The LCR Meter Project is a Python application designed to accurately perform LCR (Inductance, Capacitance, and Resistance) measurements on Noya's sorbent. Leveraging a PyQt5-based GUI, the app allows users to input test parameters and record measurement data directly to Google Sheets, ensuring efficient and reliable analysis for quality control and research.
+The LCR Meter Project is a Python application designed to accurately perform inductance measurements on Noya's sorbent. Leveraging a PyQt5-based GUI, the app allows users to input test parameters and record measurement data directly to Google Sheets, ensuring efficient and reliable analysis for quality control and research.
 
 ## Project Structure
 
@@ -11,18 +11,31 @@ LCR-Meter-Project
 ├── gui
 │   ├── __init__.py
 │   ├── main_window.py
-│   ├── number_pad.py
-│   └── stylesheets.py
+│   ├── stylesheets.py
+│   └── widgets
+│       ├── __init__.py
+│       └── number_pad.py
 ├── components
 │   ├── __init__.py
 │   ├── google_sheets.py
-│   └── lcr_tests.py
+│   └── instrument
+│       ├── __init__.py
+│       ├── lcr_meter.py
+│       └── measurement.py
+├── utils
+│   ├── __init__.py
+│   └── logging_config.py
 ├── config
 │   ├── __init__.py
 │   └── settings.py
+├── resources
+│   ├── icon.ico
+│   └── splash_screen.png
+├── logs
 ├── main.py
-├── measure.py
-└── README.md
+├── create_splash.py
+├── README.md
+└── .gitignore
 ```
 
 ## Installation
@@ -47,13 +60,13 @@ LCR-Meter-Project
    ```
    python main.py
    ```
-3. Use the GUI to enter the sample name, resource name, frequency, voltage, and timeout.
+3. Use the GUI to enter the sample name, tester name, frequency, voltage, and timeout.
 4. Click the "Start" button to begin the measurement sequence.
 
 ## Features
 
-- Specialized LCR measurements tailored for Noya's sorbent samples.
-- Measurement of inductance, capacitance, and resistance with high precision.
+- Specialized inductance measurements tailored for Noya's sorbent samples and assemblages.
+- Measurements in henries and ohms.
 - Integration with Google Sheets for seamless data logging and analysis.
 - User-friendly GUI with custom numeric input dialogs for effortless parameter entry.
 
