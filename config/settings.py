@@ -18,17 +18,6 @@ else:
 APP_NAME = "LCR Meter"
 APP_VERSION = "1.0.0"
 
-# Google Sheets settings
-GOOGLE_SHEETS_CREDENTIALS_FILE = os.getenv(
-    'GOOGLE_SHEETS_CREDENTIALS_FILE',
-    'C:/Coding/LCR/sorbent-pressure-drop-data-160450782f01.json'
-)
-SPREADSHEET_ID = os.getenv(
-    'SPREADSHEET_ID', 
-    '1CTTiAvbEiF249dqL7zbPQoBwCmrYzIVuGIvOMKqWZG8'
-)
-SHEET_RANGE = os.getenv('SHEET_RANGE', 'LCR!A1:E')
-
 # Supabase Database settings
 SUPABASE_URL = os.getenv('SUPABASE_URL', 'https://your-project-url.supabase.co')
 SUPABASE_KEY = os.getenv('SUPABASE_KEY', '')
@@ -63,9 +52,6 @@ def validate_settings():
     
     if not SUPABASE_KEY and DB_ENABLE:
         errors.append("SUPABASE_KEY is missing but database is enabled")
-    
-    if not os.path.exists(GOOGLE_SHEETS_CREDENTIALS_FILE):
-        errors.append(f"Google Sheets credentials file not found: {GOOGLE_SHEETS_CREDENTIALS_FILE}")
     
     return errors
 

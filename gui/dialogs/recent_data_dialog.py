@@ -1,39 +1,38 @@
 import logging
 from datetime import datetime
 from PyQt5.QtWidgets import (
-    QDialog, QVBoxLayout, QHBoxLayout, QTableWidget, QTableWidgetItem,
+    QVBoxLayout, QHBoxLayout, QTableWidget, QTableWidgetItem,
     QPushButton, QLabel, QHeaderView, QSizePolicy, QDialogButtonBox, 
     QStyle, QApplication
 )
 from PyQt5.QtCore import Qt
 from PyQt5.QtGui import QFont, QColor
 
+# Import base dialog class
+from gui.dialogs.dialog_base import DialogBase
+
+# Import centralized styles
+from gui.stylesheets import (
+    DATA_TABLE_STYLESHEET, 
+    STATUS_LABEL_STYLESHEET, 
+    DIALOG_BUTTON_STYLESHEET
+)
+
 logger = logging.getLogger(__name__)
 
-class RecentDataDialog(QDialog):
+class RecentDataDialog(DialogBase):
     """Dialog for displaying recent measurements from the database."""
     
     def __init__(self, parent=None, measurements=None):
-        super().__init__(parent)
+        super().__init__(parent, title="Recent Measurements")
+        
         # Log what we received to help diagnose issues
         logger.debug(f"RecentDataDialog: Received {len(measurements) if measurements else 0} measurements")
         if measurements:
             logger.debug(f"First measurement: {measurements[0]}")
             
         self.measurements = measurements or []
-        self.setWindowTitle("Recent Measurements")
-        self.setMinimumSize(900, 600)  # Even larger for better visibility
-        self.setWindowFlags(self.windowFlags() | Qt.WindowMaximizeButtonHint)
-        
-        # Center the dialog on the screen
-        self.setGeometry(
-            QStyle.alignedRect(
-                Qt.LeftToRight,
-                Qt.AlignCenter,
-                self.size(),
-                QApplication.desktop().availableGeometry()
-            )
-        )
+        self.setMinimumSize(900, 600)
         
         self._setup_ui()
         
@@ -44,35 +43,15 @@ class RecentDataDialog(QDialog):
         
         # Add status/info label with better visibility
         self.status_label = QLabel("Recent measurements:")
-        self.status_label.setStyleSheet("font-weight: bold; font-size: 14px; margin: 5px;")
+        self.status_label.setStyleSheet(STATUS_LABEL_STYLESHEET["normal"])
         layout.addWidget(self.status_label)
         
         # Create table widget with better visibility
         self.table = QTableWidget()
         self.table.setAlternatingRowColors(True)
         self.table.setSelectionBehavior(QTableWidget.SelectRows)
-        self.table.setStyleSheet("""
-            QTableWidget {
-                border: 1px solid #d3d3d3;
-                gridline-color: #e0e0e0;
-                background-color: #ffffff;
-            }
-            QTableWidget::item {
-                padding: 8px;
-                border-bottom: 1px solid #e0e0e0;
-            }
-            QHeaderView::section {
-                background-color: #f0f0f0;
-                padding: 8px;
-                border: 1px solid #d0d0d0;
-                font-weight: bold;
-                font-size: 12px;
-            }
-            QTableWidget QTableCornerButton::section {
-                background-color: #f0f0f0;
-                border: 1px solid #d0d0d0;
-            }
-        """)
+        self.table.setStyleSheet(DATA_TABLE_STYLESHEET)
+        
         # Make table expand to fill available space
         self.table.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
         layout.addWidget(self.table)
@@ -81,7 +60,7 @@ class RecentDataDialog(QDialog):
         button_box = QDialogButtonBox()
         close_button = button_box.addButton("Close", QDialogButtonBox.AcceptRole)
         close_button.setMinimumSize(120, 40)
-        close_button.setStyleSheet("font-size: 12px; font-weight: bold;")
+        close_button.setStyleSheet(DIALOG_BUTTON_STYLESHEET)
         button_box.accepted.connect(self.accept)
         layout.addWidget(button_box)
         
@@ -102,8 +81,7 @@ class RecentDataDialog(QDialog):
         
         if not measurements:
             logger.warning("No measurements provided to display")
-            self.status_label.setText("No recent measurements found")
-            self.status_label.setStyleSheet("font-weight: bold; font-size: 14px; color: red;")
+            self.update_status_error("No recent measurements found")
             
             # Add a single row with a message
             self.table.setRowCount(1)
@@ -200,8 +178,7 @@ class RecentDataDialog(QDialog):
         self.table.setAlternatingRowColors(True)
         
         # Update status label
-        self.status_label.setText(f"Showing {len(measurements)} records")
-        self.status_label.setStyleSheet("font-weight: bold; font-size: 14px; color: green;")
+        self.update_status_success(f"Showing {len(measurements)} records")
         
         logger.debug("Table population complete")
 
@@ -233,3 +210,14 @@ class RecentDataDialog(QDialog):
         logger.debug(f"Dialog size: {self.width()}x{self.height()}")
         logger.debug(f"Table size: {self.table.width()}x{self.table.height()}")
         logger.debug(f"Table row count: {self.table.rowCount()}, column count: {self.table.columnCount()}")
+
+    # When changing status label styles:
+    def update_status_error(self, message):
+        """Show error message in status label."""
+        self.status_label.setText(message)
+        self.status_label.setStyleSheet(STATUS_LABEL_STYLESHEET["error"])
+    
+    def update_status_success(self, message):
+        """Show success message in status label."""
+        self.status_label.setText(message)
+        self.status_label.setStyleSheet(STATUS_LABEL_STYLESHEET["success"])

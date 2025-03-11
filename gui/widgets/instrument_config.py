@@ -7,6 +7,7 @@ from PyQt5.QtCore import Qt, pyqtSignal
 
 from gui.widgets.number_pad import NumberPadLineEdit
 from config.settings import DEFAULT_FREQUENCY, DEFAULT_VOLTAGE, DEFAULT_TIMEOUT, DEFAULT_RESOURCE
+from gui.stylesheets import INSTRUMENT_CONFIG_STYLESHEET
 
 logger = logging.getLogger(__name__)
 
@@ -19,6 +20,8 @@ class InstrumentConfigPanel(QWidget):
     
     def __init__(self, parent=None):
         super().__init__(parent)
+        # Apply centralized stylesheet
+        self.setStyleSheet(INSTRUMENT_CONFIG_STYLESHEET)
         self._setup_ui()
         
     def _setup_ui(self):

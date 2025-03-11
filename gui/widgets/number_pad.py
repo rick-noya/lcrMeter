@@ -2,6 +2,7 @@ from PyQt5.QtWidgets import (
     QLineEdit, QPushButton, QGridLayout, QDialog, QVBoxLayout, QHBoxLayout
 )
 from PyQt5.QtCore import Qt
+from gui.stylesheets import NUMBER_PAD_STYLESHEET
 
 class NumberPad(QDialog):
     """
@@ -11,6 +12,9 @@ class NumberPad(QDialog):
         super().__init__(parent)
         self.setWindowTitle("Number Pad")
         self.setModal(True)
+        
+        # Apply the centralized stylesheet
+        self.setStyleSheet(NUMBER_PAD_STYLESHEET)
         
         # Store the initial and current text
         self.current_text = current_text

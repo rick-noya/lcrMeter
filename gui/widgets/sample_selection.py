@@ -10,6 +10,7 @@ from PyQt5.QtWidgets import (
     QLineEdit, QListWidget, QListWidgetItem, QStyle
 )
 from PyQt5.QtCore import Qt, pyqtSignal
+from gui.stylesheets import SAMPLE_PANEL_STYLESHEET
 
 logger = logging.getLogger(__name__)
 
@@ -53,13 +54,14 @@ class SampleSelectionPanel(QWidget):
         layout.addLayout(input_layout)
         
         # List heading
-        heading_label = QLabel("Available Sample Names:")
+        heading_label = QLabel("Previously Tested Samples:")
         heading_label.setAlignment(Qt.AlignLeft)
         layout.addWidget(heading_label)
         
-        # Samples list widget
+        # Samples list widget - apply stylesheet
         self.sample_list = QListWidget()
         self.sample_list.setMaximumHeight(150)  # Limit height
+        self.sample_list.setStyleSheet(SAMPLE_PANEL_STYLESHEET)
         self.sample_list.itemClicked.connect(self._on_item_clicked)
         layout.addWidget(self.sample_list)
         
@@ -105,9 +107,22 @@ class SampleSelectionPanel(QWidget):
         
     def _on_item_clicked(self, item: QListWidgetItem):
         """Handle clicks on sample list items."""
-        if item.flags() & Qt.ItemIsSelectable:
-            self.sample_name_input.setText(item.text())
-            self.sample_selected.emit(item.text())
+        try:
+            # Immediately capture the text to avoid deleted-object issues
+            item_text = item.text()
+            
+            # Only proceed if the item is selectable
+            if item.flags() & Qt.ItemIsSelectable:
+                # Temporarily block signals to prevent recursive updates
+                self.sample_name_input.blockSignals(True)
+                self.sample_name_input.setText(item_text)
+                self.sample_name_input.blockSignals(False)
+                
+                # Emit the signal with the captured text
+                self.sample_selected.emit(item_text)
+        except RuntimeError:
+            # Handle case where the item has been deleted
+            logger.warning("Item was deleted before it could be processed")
             
     def _on_refresh_clicked(self):
         """Handle refresh button clicks."""

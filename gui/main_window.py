@@ -6,7 +6,7 @@ from typing import List, Dict, Any, Optional
 
 from PyQt5.QtWidgets import (
     QMainWindow, QWidget, QVBoxLayout, QHBoxLayout, QLabel, QPushButton, 
-    QTextEdit, QLineEdit, QMessageBox, QStatusBar, QMenuBar, QMenu, QAction, QFileDialog
+    QTextEdit, QLineEdit, QMessageBox, QStatusBar, QMenuBar, QMenu, QAction, QFileDialog, QComboBox
 )
 from PyQt5.QtCore import Qt, QTimer
 from PyQt5.QtGui import QIcon
@@ -15,10 +15,10 @@ from qasync import asyncSlot
 from config.settings import WINDOW_WIDTH, WINDOW_HEIGHT
 from components.instrument.lcr_meter import LCRMeter
 from components.instrument.measurement import run_measurement_sequence
-from components.google_sheets import get_sample_names, upload_data as gs_upload_data
+from components.sample_manager import get_sample_names  # Updated import
 from gui.stylesheets import (MAIN_WINDOW_STYLESHEET, START_BUTTON_STYLESHEET, 
                            START_BUTTON_RUNNING_STYLESHEET)
-from components.supabase_db import upload_data as db_upload_data  # Updated import
+from components.supabase_db import upload_data as db_upload_data
 from utils.error_handling import safe_async_call, to_thread_with_error_handling
 from gui.widgets.sample_selection import SampleSelectionPanel
 from gui.widgets.instrument_config import InstrumentConfigPanel
@@ -80,11 +80,14 @@ class MainWindow(QMainWindow):
         self.sample_panel.refresh_requested.connect(self.load_sample_names_async)
         layout.addWidget(self.sample_panel)
         
-        # Tester name input
+        # Replace tester name input with a drop‑down selector
         tester_layout = QHBoxLayout()
         tester_layout.addWidget(QLabel("Tester Name:"), alignment=Qt.AlignRight)
-        self.tester_name_input = QLineEdit()
-        tester_layout.addWidget(self.tester_name_input)
+        self.tester_name_combo = QComboBox()
+        # Add the preset tester names
+        tester_names = ["Rick R", "Colin S", "Aditi D", "Nate G", "Matt S", "Shazia S", "Krys - ABP", "Dan - ABP"]
+        self.tester_name_combo.addItems(tester_names)
+        tester_layout.addWidget(self.tester_name_combo)
         layout.addLayout(tester_layout)
         
         # Instrument configuration panel
@@ -113,8 +116,8 @@ class MainWindow(QMainWindow):
         self.statusBar.showMessage(message, 3000)  # Show for 3 seconds
 
     def get_tester_name(self) -> str:
-        """Get the current tester name from the input field."""
-        return self.tester_name_input.text()
+        """Get the current tester name from the selector."""
+        return self.tester_name_combo.currentText()
 
     def load_sample_names_async(self):
         """Start async loading of sample names."""
@@ -137,16 +140,20 @@ class MainWindow(QMainWindow):
 
     @asyncSlot()
     async def load_sample_names(self):
-        """Load sample names from Google Sheets asynchronously."""
+        """Load sample names from Supabase database asynchronously."""
         self.sample_panel.show_loading_state()
         
         try:
             # Fetch sample names in a background thread
-            sample_names = await asyncio.to_thread(get_sample_names)
+            sample_names = await to_thread_with_error_handling(
+                get_sample_names,
+                error_message="Failed to load sample names from database",
+                ui_logger=self.append_log
+            )
             
             # Update UI with fetched names
-            self.sample_panel.update_sample_names(sample_names)
-            self.append_log(f"Loaded {len(sample_names)} sample names")
+            self.sample_panel.update_sample_names(sample_names or [])
+            self.append_log(f"Loaded {len(sample_names or [])} sample names from database")
         except Exception as e:
             self.append_log(f"Error loading sample names: {e}")
             self.sample_panel.show_error_state()
@@ -252,16 +259,10 @@ class MainWindow(QMainWindow):
                         Rs_value = row[4]
                         self.append_log(f"{test_type}: L={L_value} H, Rs={Rs_value} ohm")
                         
-                    # Upload data to both Google Sheets and Supabase database
+                    # Upload data to Supabase database
                     await safe_async_call(
-                        gs_upload_data(self),  # Using the renamed import
-                        error_message="Failed to upload data to Google Sheets",
-                        ui_logger=self.append_log
-                    )
-                    
-                    await safe_async_call(
-                        db_upload_data(self),  # Using the renamed import 
-                        error_message="Failed to upload data to Supabase database",
+                        db_upload_data(self),
+                        error_message="Failed to upload data to database",
                         ui_logger=self.append_log
                     )
                 
@@ -328,7 +329,3 @@ class MainWindow(QMainWindow):
             self.append_log("No recent measurements found in Supabase database")
             QMessageBox.information(self, "Recent Measurements", 
                                "No recent measurements found in the database.")
-
-    # Remove the unused show_recent_data method since we now have a proper implementation
-    # async def show_recent_data(self):
-    #    ...

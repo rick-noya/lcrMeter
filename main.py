@@ -114,7 +114,7 @@ def main_gui():
                 return 1
             
             # Final splash update
-            update_splash(splash, app, "Starting application...")
+            update_splash(splash, app, "Starting Application...")
             
             # Close splash and show window in sequence with proper timing
             def finish_loading():
