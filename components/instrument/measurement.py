@@ -35,7 +35,7 @@ async def run_measurement_sequence(
         L, Rs = await lcr_meter.measure_ls_rs()
         
         # Log the measurement result
-        logger.debug(f"Measurement: L={L:.3e} H, Rs={Rs:.3e} Ω")
+        logger.debug(f"Measurement: L={L:.3e} H, Rs={Rs:.3e} ohm")
         
         # Store the result
         results.append([timestamp, sample_name, "Ls-Rs", f"{L:.3e}", f"{Rs:.3e}", tester_name])
@@ -46,6 +46,3 @@ async def run_measurement_sequence(
     except Exception as e:
         logger.error(f"Error during measurement sequence: {e}")
         raise
-    finally:
-        # Always close the connection to the instrument
-        lcr_meter.close()

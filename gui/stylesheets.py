@@ -49,3 +49,15 @@ START_BUTTON_STYLESHEET = """
     }
     QPushButton:hover { background-color: #45a049; }
 """
+
+START_BUTTON_RUNNING_STYLESHEET = """
+    QPushButton {
+        background-color: #F44336;  /* Red */
+        color: white;
+        padding: 20px;
+        font-size: 24px;
+        border: none;
+        border-radius: 10px;
+    }
+    QPushButton:hover { background-color: #D32F2F; }  /* Darker red on hover */
+"""

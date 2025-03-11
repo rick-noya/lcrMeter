@@ -23,3 +23,6 @@ pip-delete-this-directory.txt
 # IDE and editor folders
 .vscode/
 .idea/
+
+# Environment variables
+.env
