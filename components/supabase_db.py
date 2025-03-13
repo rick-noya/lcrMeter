@@ -6,7 +6,7 @@ from supabase import create_client, Client
 import atexit
 
 from config.settings import (
-    SUPABASE_URL, SUPABASE_KEY, SUPABASE_TABLE,
+    SUPABASE_URL, SUPABASE_KEY, SAMPLES_TABLE, MEASUREMENTS_TABLE,
     DB_ENABLE
 )
 from utils.error_handling import handle_errors, ErrorAction
@@ -46,135 +46,176 @@ def get_supabase_client() -> Client:
 @handle_errors(action=ErrorAction.RERAISE)
 def verify_table_exists() -> bool:
     """
-    Verify that the measurements table exists in Supabase.
-    Uses a simple query that doesn't assume specific column structure.
+    Verify that the necessary tables exist in Supabase.
     
     Returns:
         True if verification was successful
     """
     try:
         supabase = get_supabase_client()
-        # Just query using * to avoid specifying column names
-        response = supabase.table(SUPABASE_TABLE).select("*").limit(1).execute()
-        logger.debug("Supabase table verification successful")
+        # Verify the measurements table (samples should exist too)
+        response = supabase.table(MEASUREMENTS_TABLE).select("*").limit(1).execute()
+        logger.debug("Supabase measurements table verification successful")
         
         # Log table structure if we got data
         if response.data and len(response.data) > 0:
             columns = list(response.data[0].keys())
-            logger.info(f"Supabase table columns: {columns}")
+            logger.info(f"Measurements table columns: {columns}")
         
         return True
     except Exception as e:
         logger.error(f"Supabase table verification failed: {e}")
         error_msg = str(e)
         if "does not exist" in error_msg:
-            logger.error(f"Table '{SUPABASE_TABLE}' does not exist in Supabase")
+            logger.error(f"Table '{MEASUREMENTS_TABLE}' does not exist in Supabase")
         raise
 
 @handle_errors(action=ErrorAction.RERAISE)
-def append_rows_to_database(rows):
+def append_rows_to_database(rows: List[List[Any]]):
     """
-    Append measurement rows to the Supabase database.
-    
-    Args:
-        rows: List of measurement data rows in the format:
-            [timestamp, sample_name, test_type, value1, value2, tester_name]
+    For each measurement record, find (or insert) the sample and then insert the measurement.
+    Each row is in the format:
+        [timestamp, sample_name, test_type, impedance, resistance, tester_name, gui_version]
     """
-    logger.debug(f"Appending {len(rows)} rows to Supabase database")
+    logger.debug(f"Appending {len(rows)} measurement rows to Supabase database")
     supabase = get_supabase_client()
-    data_to_insert = []
-    
-    # First query database to get actual column names
-    try:
-        response = supabase.table(SUPABASE_TABLE).select("*").limit(1).execute()
-        if response.data and len(response.data) > 0:
-            columns = list(response.data[0].keys())
-            logger.debug(f"Detected database columns: {columns}")
-        else:
-            # Default to known column names from error message
-            columns = ["id", "created_at", "sample_name", "test_type", "impedance", "resistance", "tester"]
-            logger.debug(f"Using default column mapping: {columns}")
-    except Exception as e:
-        logger.warning(f"Could not fetch column names: {e}")
-        # Default to known column names from error message
-        columns = ["id", "created_at", "sample_name", "test_type", "impedance", "resistance", "tester"]
-        logger.debug(f"Using default column mapping: {columns}")
+    measurements_to_insert = []
     
     for row in rows:
-        measurement = {}
+        # Extract fields from the row
+        # Assumes: row[0]=timestamp, row[1]=sample_name, row[2]=test_type,
+        # row[3]=impedance, row[4]=resistance, row[5]=tester_name, row[6]=gui_version
+        timestamp = row[0] if isinstance(row[0], str) else row[0].isoformat()
+        sample_name = row[1].strip() if row[1] else ""
+        test_type = row[2]
+        impedance = row[3]
+        resistance = row[4]
+        tester = row[5] if len(row) >= 6 else ""
+        gui_version = row[6] if len(row) >= 7 else ""
         
-        # Always safe fields
-        measurement["created_at"] = row[0] if isinstance(row[0], str) else row[0].isoformat()
-        measurement["sample_name"] = row[1]
+        # Look up the sample in the SAMPLES_TABLE
+        sample_resp = supabase.table(SAMPLES_TABLE).select("id").eq("sample_name", sample_name).execute()
+        if sample_resp.data and len(sample_resp.data) > 0:
+            sample_id = sample_resp.data[0]["id"]
+        else:
+            # Insert the sample if not present
+            insert_sample = supabase.table(SAMPLES_TABLE).insert({"sample_name": sample_name}).execute()
+            if insert_sample.data and len(insert_sample.data) > 0:
+                sample_id = insert_sample.data[0]["id"]
+            else:
+                logger.error(f"Failed to insert sample '{sample_name}'. Skipping measurement.")
+                continue  # Skip adding this measurement record
         
-        if "test_type" in columns:
-            measurement["test_type"] = row[2]
-        
-        # Map inductance to impedance column
-        if "impedance" in columns:
-            measurement["impedance"] = row[3]  # This is the L value
-        
-        # Map resistance to resistance column
-        if "resistance" in columns:
-            measurement["resistance"] = row[4]  # This is the R value
-        
-        # Tester name
-        if len(row) > 5 and "tester" in columns:
-            measurement["tester"] = row[5]
-        
-        data_to_insert.append(measurement)
+        measurement = {
+            "created_at": timestamp,
+            "sample_id": sample_id,
+            "test_type": test_type,
+            "impedance": impedance,
+            "resistance": resistance,
+            "tester": tester,
+            "gui_version": gui_version
+        }
+        measurements_to_insert.append(measurement)
     
-    # Insert the data
-    try:
-        response = supabase.table(SUPABASE_TABLE).insert(data_to_insert).execute()
-        logger.debug("Rows appended to Supabase database successfully")
-    except Exception as e:
-        logger.warning(f"Database insertion failed: {e}")
-        
-        # Try a minimal insert with just the essential fields
+    if measurements_to_insert:
         try:
-            minimal_data = []
-            for row in rows:
-                data = {
-                    "sample_name": row[1],
-                }
-                
-                # Only add fields that we know exist
-                if "impedance" in columns:
-                    data["impedance"] = row[3]
-                    
-                if "resistance" in columns:
-                    data["resistance"] = row[4]
-                
-                minimal_data.append(data)
-            
-            response = supabase.table(SUPABASE_TABLE).insert(minimal_data).execute()
-            logger.debug("Minimal rows appended to Supabase database")
-        except Exception as e2:
-            logger.error(f"Final fallback insertion failed: {e2}")
-            raise e  # Re-raise the original error
+            response = supabase.table(MEASUREMENTS_TABLE).insert(measurements_to_insert).execute()
+            logger.debug("Measurements inserted successfully into Supabase")
+        except Exception as e:
+            logger.error(f"Failed inserting measurements: {e}")
+            raise
+    else:
+        logger.debug("No new measurement records to insert.")
 
 @handle_errors(action=ErrorAction.RERAISE)
 async def upload_data(main_window):
     """
-    Upload measurement data from main_window to the Supabase database.
-    
-    Args:
-        main_window: The main application window containing lcr_data.
+    Upload measurement data (containing gui_version) from main_window to Supabase.
     """
     if not DB_ENABLE:
         main_window.append_log("Database storage is disabled in settings")
         return
-        
+
     if not main_window.lcr_data:
         main_window.append_log("No data to upload to database")
         return
-    
+
     try:
-        logger.debug("Uploading data to Supabase database")
+        logger.debug("Uploading measurement data to Supabase database")
         append_rows_to_database(main_window.lcr_data)
         main_window.append_log("Data successfully saved to Supabase database")
-        logger.debug("Data upload to Supabase database successful")
+        logger.debug("Data upload to Supabase successful")
     except Exception as e:
-        main_window.append_log(f"Error saving data to Supabase database: {e}")
-        logger.error(f"Error uploading data to Supabase database: {e}")
+        main_window.append_log(f"Error saving data to Supabase: {e}")
+        logger.error(f"Error uploading data to Supabase: {e}")
+
+@handle_errors(action=ErrorAction.RERAISE)
+def create_normalized_schema():
+    """
+    Create the normalized database schema if it doesn't exist.
+    This includes samples and measurements tables.
+    """
+    logger.debug("Attempting to create or verify normalized database schema")
+    supabase = get_supabase_client()
+    
+    try:
+        # Using SQL through Supabase's RPC to create the schema
+        
+        # 1. Create the immutable date truncation function
+        create_func_query = """
+        CREATE OR REPLACE FUNCTION immutable_date_trunc_minutes(ts TIMESTAMPTZ)
+        RETURNS TIMESTAMPTZ
+        IMMUTABLE STRICT LANGUAGE SQL AS $$
+            SELECT date_trunc('minute', ts);
+        $$;
+        """
+        
+        # 2. Create samples table
+        create_samples_query = f"""
+        CREATE TABLE IF NOT EXISTS {SAMPLES_TABLE} (
+            id SERIAL PRIMARY KEY,
+            sample_name TEXT NOT NULL UNIQUE
+        )
+        """
+        
+        # 3. Create measurements table
+        create_measurements_query = f"""
+        CREATE TABLE IF NOT EXISTS {MEASUREMENTS_TABLE} (
+            id SERIAL PRIMARY KEY,
+            created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+            sample_id INTEGER NOT NULL REFERENCES {SAMPLES_TABLE}(id) ON DELETE CASCADE,
+            test_type TEXT NOT NULL,
+            impedance TEXT NOT NULL,
+            resistance TEXT NOT NULL,
+            tester TEXT NOT NULL,
+            gui_version TEXT,
+            normalized_timestamp TIMESTAMPTZ GENERATED ALWAYS AS (immutable_date_trunc_minutes(created_at)) STORED,
+            CONSTRAINT unique_measurement UNIQUE (sample_id, test_type, normalized_timestamp)
+        )
+        """
+        
+        # 4. Create indexes
+        create_indexes_query = f"""
+        CREATE INDEX IF NOT EXISTS idx_measurements_sample_id ON {MEASUREMENTS_TABLE} (sample_id);
+        CREATE INDEX IF NOT EXISTS idx_measurements_created_at ON {MEASUREMENTS_TABLE} (created_at)
+        """
+        
+        # Execute the queries
+        logger.debug("Creating immutable date truncation function")
+        supabase.rpc('run_query', {"query": create_func_query}).execute()
+        
+        logger.debug(f"Creating samples table: {SAMPLES_TABLE}")
+        supabase.rpc('run_query', {"query": create_samples_query}).execute()
+        
+        logger.debug(f"Creating measurements table: {MEASUREMENTS_TABLE}")
+        supabase.rpc('run_query', {"query": create_measurements_query}).execute()
+        
+        logger.debug("Creating indexes")
+        supabase.rpc('run_query', {"query": create_indexes_query}).execute()
+        
+        logger.info("Normalized schema created or verified successfully")
+        return True
+        
+    except Exception as e:
+        logger.error(f"Error creating normalized schema: {e}")
+        raise

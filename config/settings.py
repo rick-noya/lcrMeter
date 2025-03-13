@@ -16,12 +16,16 @@ else:
 
 # Application settings
 APP_NAME = "LCR Meter"
-APP_VERSION = "1.0.0"
+APP_VERSION = "0.2.0"
+GUI_VERSION = os.getenv('GUI_VERSION', APP_VERSION)
 
 # Supabase Database settings
 SUPABASE_URL = os.getenv('SUPABASE_URL', 'https://your-project-url.supabase.co')
 SUPABASE_KEY = os.getenv('SUPABASE_KEY', '')
-SUPABASE_TABLE = os.getenv('SUPABASE_TABLE', 'Ls-Rs')
+
+# Normalized database tables
+SAMPLES_TABLE = os.getenv('SAMPLES_TABLE', 'samples')
+MEASUREMENTS_TABLE = os.getenv('MEASUREMENTS_TABLE', 'measurements')
 DB_ENABLE = os.getenv('DB_ENABLE', 'True').lower() in ('true', '1', 'yes')
 
 # Logging settings

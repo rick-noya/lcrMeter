@@ -3,6 +3,7 @@ import logging
 from datetime import datetime
 from typing import List, Tuple, Any
 from components.instrument.lcr_meter import LCRMeter
+from config.settings import GUI_VERSION
 
 logger = logging.getLogger(__name__)
 
@@ -21,7 +22,7 @@ async def run_measurement_sequence(
         
     Returns:
         List of measurement data rows in the format:
-        [timestamp, sample_name, test_type, value1, value2, tester_name]
+        [timestamp, sample_name, test_type, value1, value2, tester_name, gui_version]
     """
     results = []
     timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
@@ -37,8 +38,16 @@ async def run_measurement_sequence(
         # Log the measurement result
         logger.debug(f"Measurement: L={L:.3e} H, Rs={Rs:.3e} ohm")
         
-        # Store the result
-        results.append([timestamp, sample_name, "Ls-Rs", f"{L:.3e}", f"{Rs:.3e}", tester_name])
+        # Store the result and include the gui_version
+        results.append([
+            timestamp, 
+            sample_name, 
+            "Ls-Rs", 
+            f"{L:.3e}", 
+            f"{Rs:.3e}", 
+            tester_name,
+            GUI_VERSION
+        ])
         
         logger.info("Ls-Rs measurement completed successfully")
         return results

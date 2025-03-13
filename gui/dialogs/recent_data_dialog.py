@@ -21,10 +21,10 @@ from gui.stylesheets import (
 logger = logging.getLogger(__name__)
 
 class RecentDataDialog(DialogBase):
-    """Dialog for displaying recent measurements from the database."""
+    """Dialog for displaying measurements from the database."""
     
     def __init__(self, parent=None, measurements=None):
-        super().__init__(parent, title="Recent Measurements")
+        super().__init__(parent, title="Measurement Database")
         
         # Log what we received to help diagnose issues
         logger.debug(f"RecentDataDialog: Received {len(measurements) if measurements else 0} measurements")
@@ -42,7 +42,7 @@ class RecentDataDialog(DialogBase):
         layout = QVBoxLayout(self)
         
         # Add status/info label with better visibility
-        self.status_label = QLabel("Recent measurements:")
+        self.status_label = QLabel("Database measurements:")
         self.status_label.setStyleSheet(STATUS_LABEL_STYLESHEET["normal"])
         layout.addWidget(self.status_label)
         

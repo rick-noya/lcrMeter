@@ -9,7 +9,7 @@ from PyQt5.QtCore import Qt, QTimer
 from gui.main_window import MainWindow
 from qasync import QEventLoop
 from utils.logging_config import setup_logging
-from components.supabase_db import get_supabase_client, verify_table_exists
+from components.supabase_db import get_supabase_client, verify_table_exists, create_normalized_schema
 from config.settings import validate_settings
 
 logger = logging.getLogger(__name__)
@@ -80,8 +80,11 @@ def main_gui():
         try:
             # Initialize Supabase client and verify table exists
             client = get_supabase_client()
-            verify_table_exists()
-            logger.info("Supabase connection verified")
+            
+            # Try to create or verify the schema
+            create_normalized_schema()
+            verify_table_exists()  
+            logger.info("Supabase connection and schema verified")
         except Exception as e:
             logger.warning(f"Supabase initialization warning: {e}")
             # Continue with application even if database fails

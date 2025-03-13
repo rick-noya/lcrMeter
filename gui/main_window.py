@@ -191,11 +191,11 @@ class MainWindow(QMainWindow):
         db_menu = QMenu("&Database", self)
         menubar.addMenu(db_menu)
         
-        # View recent data action
-        view_recent_action = QAction("&View Recent Data", self)
-        view_recent_action.setStatusTip("View recent measurement data")
-        view_recent_action.triggered.connect(self.view_recent_data)
-        db_menu.addAction(view_recent_action)
+        # View data action - updated name
+        view_data_action = QAction("&View Database", self)
+        view_data_action.setStatusTip("View all measurement data")
+        view_data_action.triggered.connect(self.view_recent_data)
+        db_menu.addAction(view_data_action)
 
     @asyncSlot()
     async def on_start_sequence(self):
@@ -304,16 +304,18 @@ class MainWindow(QMainWindow):
 
     @asyncSlot()
     async def view_recent_data(self):
-        """Show a dialog with recent measurement data from the Supabase database."""
+        """Show a dialog with all measurement data from the Supabase database."""
         from utils.db_tools import view_recent_measurements
         from gui.dialogs.recent_data_dialog import RecentDataDialog
         
-        self.append_log("Loading recent measurements from Supabase database...")
+        self.append_log("Loading measurements from Supabase database...")
         
-        # Use our error handling utility for thread operations
+        # Set days=None to get ALL data with a higher limit
         recent_data = await to_thread_with_error_handling(
             view_recent_measurements,
-            error_message="Failed to load recent measurements",
+            None,  # No day limit
+            1000,  # Increased record limit
+            error_message="Failed to load measurements",
             ui_logger=self.append_log
         )
         
