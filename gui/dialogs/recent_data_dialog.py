@@ -106,9 +106,10 @@ class RecentDataDialog(DialogBase):
             "created_at": "Date/Time",
             "sample_name": "Sample",
             "test_type": "Test Type",
-            "impedance": "Inductance (H)",
+            "inductance": "Inductance (H)",
             "resistance": "Resistance (Ω)",
-            "tester": "Tester"
+            "tester": "Tester",
+            "gui_version": "GUI Version"  
         }
         
         # Only use columns that we have a display name for
@@ -140,7 +141,7 @@ class RecentDataDialog(DialogBase):
                         logger.warning(f"Error formatting datetime {value}: {e}")
                 
                 # Format scientific notation values nicely
-                if column in ["impedance", "resistance"] and 'e' in str(value).lower():
+                if column in ["inductance", "resistance"] and 'e' in str(value).lower():
                     try:
                         # Format scientific notation more cleanly
                         float_val = float(value)

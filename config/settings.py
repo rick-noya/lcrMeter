@@ -25,7 +25,7 @@ SUPABASE_KEY = os.getenv('SUPABASE_KEY', '')
 
 # Normalized database tables
 SAMPLES_TABLE = os.getenv('SAMPLES_TABLE', 'samples')
-MEASUREMENTS_TABLE = os.getenv('MEASUREMENTS_TABLE', 'measurements')
+MEASUREMENTS_TABLE = os.getenv('MEASUREMENTS_TABLE', 'ls-rs_measurements')  # Updated table name
 DB_ENABLE = os.getenv('DB_ENABLE', 'True').lower() in ('true', '1', 'yes')
 
 # Logging settings

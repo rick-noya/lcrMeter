@@ -12,7 +12,7 @@ from PyQt5.QtCore import Qt, QTimer
 from PyQt5.QtGui import QIcon
 
 from qasync import asyncSlot
-from config.settings import WINDOW_WIDTH, WINDOW_HEIGHT
+from config.settings import WINDOW_WIDTH, WINDOW_HEIGHT, APP_NAME, GUI_VERSION
 from components.instrument.lcr_meter import LCRMeter
 from components.instrument.measurement import run_measurement_sequence
 from components.sample_manager import get_sample_names  # Updated import
@@ -31,7 +31,7 @@ class MainWindow(QMainWindow):
     """
     def __init__(self):
         super().__init__()
-        self.setWindowTitle("LCR Meter")
+        self.setWindowTitle(f"{APP_NAME} v{GUI_VERSION}")  # Show version in title
         self.resize(WINDOW_WIDTH, WINDOW_HEIGHT)
         
         # Try to set window icon with absolute path
@@ -255,7 +255,7 @@ class MainWindow(QMainWindow):
                     self.lcr_data.extend(results)
                     for row in results:
                         test_type = row[2]
-                        L_value = row[3]
+                        L_value = row[3]  # This is now inductance
                         Rs_value = row[4]
                         self.append_log(f"{test_type}: L={L_value} H, Rs={Rs_value} ohm")
                         

@@ -36,7 +36,7 @@ def get_supabase_client() -> Client:
     """
     global _supabase_client
     
-    if _supabase_client is None:
+    if (_supabase_client is None):
         logger.debug("Initializing Supabase client")
         _supabase_client = create_client(SUPABASE_URL, SUPABASE_KEY)
         logger.debug("Supabase client initialized successfully")
@@ -75,7 +75,7 @@ def append_rows_to_database(rows: List[List[Any]]):
     """
     For each measurement record, find (or insert) the sample and then insert the measurement.
     Each row is in the format:
-        [timestamp, sample_name, test_type, impedance, resistance, tester_name, gui_version]
+        [timestamp, sample_name, test_type, inductance, resistance, tester_name, gui_version]
     """
     logger.debug(f"Appending {len(rows)} measurement rows to Supabase database")
     supabase = get_supabase_client()
@@ -84,11 +84,11 @@ def append_rows_to_database(rows: List[List[Any]]):
     for row in rows:
         # Extract fields from the row
         # Assumes: row[0]=timestamp, row[1]=sample_name, row[2]=test_type,
-        # row[3]=impedance, row[4]=resistance, row[5]=tester_name, row[6]=gui_version
+        # row[3]=inductance, row[4]=resistance, row[5]=tester_name, row[6]=gui_version
         timestamp = row[0] if isinstance(row[0], str) else row[0].isoformat()
         sample_name = row[1].strip() if row[1] else ""
         test_type = row[2]
-        impedance = row[3]
+        inductance = row[3]  # Changed from impedance
         resistance = row[4]
         tester = row[5] if len(row) >= 6 else ""
         gui_version = row[6] if len(row) >= 7 else ""
@@ -110,7 +110,7 @@ def append_rows_to_database(rows: List[List[Any]]):
             "created_at": timestamp,
             "sample_id": sample_id,
             "test_type": test_type,
-            "impedance": impedance,
+            "inductance": inductance,  # Changed from impedance
             "resistance": resistance,
             "tester": tester,
             "gui_version": gui_version
@@ -185,7 +185,7 @@ def create_normalized_schema():
             created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
             sample_id INTEGER NOT NULL REFERENCES {SAMPLES_TABLE}(id) ON DELETE CASCADE,
             test_type TEXT NOT NULL,
-            impedance TEXT NOT NULL,
+            inductance TEXT NOT NULL,  
             resistance TEXT NOT NULL,
             tester TEXT NOT NULL,
             gui_version TEXT,

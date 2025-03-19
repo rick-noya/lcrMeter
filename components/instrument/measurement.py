@@ -22,7 +22,7 @@ async def run_measurement_sequence(
         
     Returns:
         List of measurement data rows in the format:
-        [timestamp, sample_name, test_type, value1, value2, tester_name, gui_version]
+        [timestamp, sample_name, test_type, inductance, resistance, tester_name, gui_version]
     """
     results = []
     timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")

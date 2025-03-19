@@ -53,7 +53,7 @@ def view_recent_measurements(days=None, limit=1000):
     try:
         # Build the measurements query
         measurements_query = (supabase.table(MEASUREMENTS_TABLE)
-            .select("id,created_at,sample_id,test_type,impedance,resistance,tester,gui_version")
+            .select("id,created_at,sample_id,test_type,inductance,resistance,tester,gui_version")
             .order("created_at", desc=True)
             .limit(limit))
             
@@ -95,7 +95,7 @@ def view_recent_measurements(days=None, limit=1000):
                 "created_at": measurement["created_at"],
                 "sample_name": sample_name,
                 "test_type": measurement["test_type"],
-                "impedance": measurement["impedance"],
+                "inductance": measurement["inductance"],  # Changed from impedance
                 "resistance": measurement["resistance"],
                 "tester": measurement["tester"],
                 "gui_version": measurement.get("gui_version", "")
