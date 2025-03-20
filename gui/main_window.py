@@ -8,7 +8,7 @@ from PyQt5.QtWidgets import (
     QMainWindow, QWidget, QVBoxLayout, QHBoxLayout, QLabel, QPushButton, 
     QTextEdit, QLineEdit, QMessageBox, QStatusBar, QMenuBar, QMenu, QAction, QFileDialog, QComboBox
 )
-from PyQt5.QtCore import Qt, QTimer
+from PyQt5.QtCore import Qt, QTimer, QSize
 from PyQt5.QtGui import QIcon
 
 from qasync import asyncSlot
@@ -22,6 +22,8 @@ from components.supabase_db import upload_data as db_upload_data
 from utils.error_handling import safe_async_call, to_thread_with_error_handling
 from gui.widgets.sample_selection import SampleSelectionPanel
 from gui.widgets.instrument_config import InstrumentConfigPanel
+from gui.icon_manager import IconManager
+from components.instrument.measurement import validate_measurements
 
 logger = logging.getLogger(__name__)
 
@@ -46,6 +48,9 @@ class MainWindow(QMainWindow):
         # Data storage
         self.lcr_data = []  # Each row: [Timestamp, Sample Name, Test Type, Value 1, Value 2]
         
+        # Add this field to store the LCR meter reference
+        self.lcr_meter = None
+        
         # Setup UI components
         self._setup_ui()
         
@@ -67,17 +72,25 @@ class MainWindow(QMainWindow):
         layout = QVBoxLayout(central_widget)
         layout.setAlignment(Qt.AlignCenter)
         
-        # Info label at the top
+        # Info label at the top with better explanation
         self.info_label = QLabel(
             "Enter Sample Name, Resource, Frequency, Voltage, Timeout.\n"
             "Test Type: Ls-Rs (Series Inductance and Resistance)"
         )
         self.info_label.setAlignment(Qt.AlignCenter)
+        self.info_label.setToolTip(
+            "This application measures Series Inductance (Ls) and Series Resistance (Rs).\n\n"
+            "Ls = Inductance in Henries (H)\n"
+            "Rs = Resistance in Ohms (Ω)\n\n"
+            "Measurements are made at your specified frequency and voltage,\n"
+            "then recorded in the Supabase database with sample and tester information."
+        )
         layout.addWidget(self.info_label)
         
         # Sample selection panel
         self.sample_panel = SampleSelectionPanel(self)
         self.sample_panel.refresh_requested.connect(self.load_sample_names_async)
+        self.sample_panel.setToolTip("Enter or select a sample name for testing")
         layout.addWidget(self.sample_panel)
         
         # Replace tester name input with a drop‑down selector
@@ -87,23 +100,44 @@ class MainWindow(QMainWindow):
         # Add the preset tester names
         tester_names = ["Rick R", "Colin S", "Aditi D", "Nate G", "Matt S", "Shazia S", "Krys - ABP", "Dan - ABP"]
         self.tester_name_combo.addItems(tester_names)
+        self.tester_name_combo.setToolTip(
+            "Select or enter the name of the person performing the test.\n\n"
+            "This information is recorded with each measurement for:\n"
+            "• Quality control tracking\n"
+            "• Accountability\n"
+            "• Data filtering and reporting by operator\n\n"
+            "Select from the dropdown list or type a new name."
+        )
         tester_layout.addWidget(self.tester_name_combo)
         layout.addLayout(tester_layout)
         
         # Instrument configuration panel
         self.instrument_panel = InstrumentConfigPanel(self)
+        self.instrument_panel.setToolTip("Configure LCR meter connection and test parameters")
         layout.addWidget(self.instrument_panel)
         
         # Add log display
         self.log_text = QTextEdit()
         self.log_text.setReadOnly(True)
+        self.log_text.setToolTip("Test log showing measurement activities and results")
         layout.addWidget(self.log_text)
         
         # Add start button
         btn_layout = QHBoxLayout()
         layout.addLayout(btn_layout)
         self.start_button = QPushButton("Start Ls-Rs Measurement")
+        self.start_button.setIcon(IconManager.get_icon("start", 24))
+        self.start_button.setIconSize(QSize(24, 24))
         self.start_button.setStyleSheet(START_BUTTON_STYLESHEET)
+        self.start_button.setToolTip(
+            "Start measurement using current parameters:\n\n"
+            "• Connects to the specified LCR meter\n"
+            "• Configures the instrument with your Frequency and Voltage settings\n"
+            "• Takes an Ls-Rs measurement (inductance and resistance)\n"
+            "• Records results with sample name, tester, and timestamp\n"
+            "• Uploads data to the Supabase database\n\n"
+            "Ensure all parameters are set correctly before starting."
+        )
         self.start_button.clicked.connect(self.on_start_sequence)
         btn_layout.addWidget(self.start_button)
 
@@ -170,11 +204,13 @@ class MainWindow(QMainWindow):
         
         # File menu
         file_menu = QMenu("&File", self)
+        file_menu.setToolTip("File operations")
         menubar.addMenu(file_menu)
         
-        # Export data action
-        export_action = QAction("&Export Database to CSV", self)
+        # Export data action with modern icon
+        export_action = QAction(IconManager.get_icon("export"), "&Export Database to CSV", self)
         export_action.setStatusTip("Export all measurement data to CSV file")
+        export_action.setToolTip("Save all measurement data to a CSV file")
         export_action.triggered.connect(self.export_database)
         file_menu.addAction(export_action)
         
@@ -184,16 +220,19 @@ class MainWindow(QMainWindow):
         # Exit action
         exit_action = QAction("E&xit", self)
         exit_action.setStatusTip("Exit the application")
+        exit_action.setToolTip("Close the application")
         exit_action.triggered.connect(self.close)
         file_menu.addAction(exit_action)
         
         # Database menu
         db_menu = QMenu("&Database", self)
+        db_menu.setToolTip("Database operations")
         menubar.addMenu(db_menu)
         
-        # View data action - updated name
-        view_data_action = QAction("&View Database", self)
+        # View data action with database icon
+        view_data_action = QAction(IconManager.get_icon("database"), "&View Database", self)
         view_data_action.setStatusTip("View all measurement data")
+        view_data_action.setToolTip("Browse all measurement records in the database")
         view_data_action.triggered.connect(self.view_recent_data)
         db_menu.addAction(view_data_action)
 
@@ -230,7 +269,19 @@ class MainWindow(QMainWindow):
         self.start_button.setEnabled(False)
         self.lcr_data.clear()
         
+        # Create and configure LCR meter
+        lcr_meter = LCRMeter(resource_name, timeout)
+        
+        # Store reference to the meter
+        self.lcr_meter = lcr_meter
+        
         try:
+            # Connect to the instrument
+            if not await lcr_meter.connect():
+                self.append_log("Failed to connect to instrument")
+                logger.error("Failed to connect to instrument")
+                return
+            
             # Run the measurement sequence
             self.append_log(f"Starting Ls-Rs measurement for sample: {sample_name}")
             
@@ -259,17 +310,52 @@ class MainWindow(QMainWindow):
                         Rs_value = row[4]
                         self.append_log(f"{test_type}: L={L_value} H, Rs={Rs_value} ohm")
                         
-                    # Upload data to Supabase database
-                    await safe_async_call(
-                        db_upload_data(self),
-                        error_message="Failed to upload data to database",
-                        ui_logger=self.append_log
-                    )
+                    # Validate the measurement data
+                    validation_result = validate_measurements(self.lcr_data)
+                    
+                    if not validation_result['valid']:
+                        # Format issues for display with better formatting and visibility
+                        issues_text = "\n• ".join(validation_result['issues'])
+                        message = (
+                            f"The following issues were detected with the measurement:\n\n"
+                            f"• {issues_text}\n\n"
+                            f"Do you want to save this data anyway?"
+                        )
+                        
+                        # Create a more reliable message box with explicit styling
+                        msg_box = QMessageBox(self)
+                        msg_box.setWindowTitle("Measurement Validation Warning")
+                        msg_box.setText("Measurement validation failed")
+                        msg_box.setInformativeText(message)
+                        msg_box.setIcon(QMessageBox.Warning)
+                        msg_box.setStandardButtons(QMessageBox.Yes | QMessageBox.No)
+                        msg_box.setDefaultButton(QMessageBox.No)
+                        
+                        # Ensure text is visible regardless of styling
+                        msg_box.setStyleSheet("QLabel { color: black; min-width: 400px; }")
+                        
+                        reply = msg_box.exec_()
+                        
+                        if reply == QMessageBox.No:
+                            self.append_log("Data upload canceled due to validation issues.")
+                            return
+                        
+                        # If user clicks Yes, log that they chose to proceed despite warnings
+                        self.append_log("Proceeding with data upload despite validation warnings.")
+                    
+                    # Proceed with data upload
+                    try:
+                        await db_upload_data(self)
+                    except Exception as e:
+                        self.append_log(f"Error saving data: {e}")
+                        logger.error(f"Error uploading data: {e}")
                 
         except Exception as e:
             self.append_log(f"Error during test sequence: {e}")
             logger.exception("Error in test sequence")
         finally:
+            # Close the connection but maintain the reference for validation
+            lcr_meter.close()
             # Restore button appearance
             self.start_button.setText("Start Ls-Rs Measurement")
             self.start_button.setStyleSheet(START_BUTTON_STYLESHEET)

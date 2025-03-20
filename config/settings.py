@@ -16,7 +16,7 @@ else:
 
 # Application settings
 APP_NAME = "LCR Meter"
-APP_VERSION = "0.2.0"
+APP_VERSION = "0.3.0"
 GUI_VERSION = os.getenv('GUI_VERSION', APP_VERSION)
 
 # Supabase Database settings
@@ -25,8 +25,13 @@ SUPABASE_KEY = os.getenv('SUPABASE_KEY', '')
 
 # Normalized database tables
 SAMPLES_TABLE = os.getenv('SAMPLES_TABLE', 'samples')
-MEASUREMENTS_TABLE = os.getenv('MEASUREMENTS_TABLE', 'ls-rs_measurements')  # Updated table name
+MEASUREMENTS_TABLE = os.getenv('MEASUREMENTS_TABLE', 'ls-rs_measurements')
 DB_ENABLE = os.getenv('DB_ENABLE', 'True').lower() in ('true', '1', 'yes')
+
+# Notion integration settings
+NOTION_SECRET = os.getenv('NOTION_SECRET', '')
+NOTION_DATABASE_ID = os.getenv('NOTION_DATABASE_ID', '')
+NOTION_ENABLE = os.getenv('NOTION_ENABLE', 'True').lower() in ('true', '1', 'yes')
 
 # Logging settings
 LOG_LEVEL = os.getenv('LOG_LEVEL', "DEBUG")
@@ -56,6 +61,12 @@ def validate_settings():
     
     if not SUPABASE_KEY and DB_ENABLE:
         errors.append("SUPABASE_KEY is missing but database is enabled")
+    
+    if not NOTION_SECRET and NOTION_ENABLE:
+        errors.append("NOTION_SECRET is missing but Notion integration is enabled")
+        
+    if not NOTION_DATABASE_ID and NOTION_ENABLE:
+        errors.append("NOTION_DATABASE_ID is missing but Notion integration is enabled")
     
     return errors
 

@@ -43,9 +43,11 @@ class SampleSelectionPanel(QWidget):
         self.sample_name_input.textChanged.connect(self._on_text_changed)
         input_layout.addWidget(self.sample_name_input)
         
-        # Refresh button with icon
+        # Refresh button with modern icon
         self.refresh_button = QPushButton()
-        self.refresh_button.setIcon(self.style().standardIcon(QStyle.SP_BrowserReload))
+        # Use our IconManager instead of system icon
+        from gui.icon_manager import IconManager
+        self.refresh_button.setIcon(IconManager.get_icon("refresh", 20))
         self.refresh_button.setToolTip("Refresh Sample List")
         self.refresh_button.setFixedSize(30, 30)
         self.refresh_button.clicked.connect(self._on_refresh_clicked)

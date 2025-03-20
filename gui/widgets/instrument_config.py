@@ -29,33 +29,58 @@ class InstrumentConfigPanel(QWidget):
         layout = QGridLayout(self)
         
         # Resource input
-        layout.addWidget(QLabel("LCR tester:"), 0, 0, Qt.AlignRight)
+        resource_label = QLabel("LCR tester:")
+        resource_label.setToolTip("VISA resource identifier for connecting to the LCR meter")
+        layout.addWidget(resource_label, 0, 0, Qt.AlignRight)
+        
         self.resource_input = NumberPadLineEdit()
         self.resource_input.setText(DEFAULT_RESOURCE)
+        self.resource_input.setToolTip(
+            "VISA resource identifier (connection address) for your LCR meter"
+        )
         self.resource_input.textChanged.connect(self._on_config_changed)
         layout.addWidget(self.resource_input, 0, 1)
         
         # Frequency input
-        layout.addWidget(QLabel("Frequency (Hz):"), 1, 0, Qt.AlignRight)
+        freq_label = QLabel("Frequency (Hz):")
+        freq_label.setToolTip("Measurement signal frequency in Hertz")
+        layout.addWidget(freq_label, 1, 0, Qt.AlignRight)
+        
         self.frequency_input = NumberPadLineEdit()
         self.frequency_input.setPlaceholderText(str(DEFAULT_FREQUENCY))
         self.frequency_input.setText(str(DEFAULT_FREQUENCY))
+        self.frequency_input.setToolTip(
+            "Test signal frequency (default: 100,000 Hz)"
+        )
         self.frequency_input.textChanged.connect(self._on_config_changed)
         layout.addWidget(self.frequency_input, 1, 1)
         
         # Voltage input
-        layout.addWidget(QLabel("Voltage (V):"), 2, 0, Qt.AlignRight)
+        voltage_label = QLabel("Voltage (V):")
+        voltage_label.setToolTip("Test signal voltage amplitude in Volts")
+        layout.addWidget(voltage_label, 2, 0, Qt.AlignRight)
+        
         self.voltage_input = NumberPadLineEdit()
         self.voltage_input.setPlaceholderText(str(DEFAULT_VOLTAGE))
         self.voltage_input.setText(str(DEFAULT_VOLTAGE))
+        self.voltage_input.setToolTip(
+            "Test signal voltage (default: 1.0 V)"
+        )
         self.voltage_input.textChanged.connect(self._on_config_changed)
         layout.addWidget(self.voltage_input, 2, 1)
         
         # Timeout input
-        layout.addWidget(QLabel("Timeout (ms):"), 3, 0, Qt.AlignRight)
+        timeout_label = QLabel("Timeout (ms):")
+        timeout_label.setToolTip("Communication timeout with the instrument")
+        layout.addWidget(timeout_label, 3, 0, Qt.AlignRight)
+        
         self.timeout_input = NumberPadLineEdit()
         self.timeout_input.setPlaceholderText(str(DEFAULT_TIMEOUT))
         self.timeout_input.setText(str(DEFAULT_TIMEOUT))
+        self.timeout_input.setToolTip(
+            "Communication timeout in milliseconds (default: 10000 ms).\n\n"
+            "This controls how long the software waits for a response\n"
+        )
         self.timeout_input.textChanged.connect(self._on_config_changed)
         layout.addWidget(self.timeout_input, 3, 1)
     

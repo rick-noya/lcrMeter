@@ -130,7 +130,7 @@ def append_rows_to_database(rows: List[List[Any]]):
 @handle_errors(action=ErrorAction.RERAISE)
 async def upload_data(main_window):
     """
-    Upload measurement data (containing gui_version) from main_window to Supabase.
+    Upload measurement data from main_window to Supabase and Notion.
     """
     if not DB_ENABLE:
         main_window.append_log("Database storage is disabled in settings")
@@ -140,14 +140,52 @@ async def upload_data(main_window):
         main_window.append_log("No data to upload to database")
         return
 
+    # Check if LCR meter is still connected
+    if hasattr(main_window, 'lcr_meter') and not main_window.lcr_meter.instrument:
+        # LCR meter reference exists but connection is closed
+        reply = QMessageBox.question(
+            main_window,
+            "Device Connection Warning",
+            "The LCR meter appears to be disconnected. This may indicate a measurement error.\n\n"
+            "Do you want to save this data anyway?",
+            QMessageBox.Yes | QMessageBox.No,
+            QMessageBox.No
+        )
+        
+        if reply == QMessageBox.No:
+            main_window.append_log("Data upload canceled due to device connection issue.")
+            return
+            
+        main_window.append_log("Proceeding with data upload despite device connection warning.")
+
     try:
+        # Upload to Supabase
         logger.debug("Uploading measurement data to Supabase database")
         append_rows_to_database(main_window.lcr_data)
         main_window.append_log("Data successfully saved to Supabase database")
         logger.debug("Data upload to Supabase successful")
+        
+        # Now upload to Notion (only if enabled)
+        from components.notion_db import upload_measurement_to_notion
+        from config.settings import NOTION_ENABLE
+        
+        if NOTION_ENABLE:
+            for row in main_window.lcr_data:
+                sample_name = row[1]  # Sample name
+                resistance_str = row[4]  # Resistance value as string
+                
+                # Convert resistance string to float
+                try:
+                    resistance_value = float(resistance_str)
+                except (ValueError, AttributeError):
+                    logger.error(f"Could not parse resistance value: {resistance_str}")
+                    resistance_value = 0.0
+                    
+                await upload_measurement_to_notion(main_window, sample_name, resistance_value)
+        
     except Exception as e:
-        main_window.append_log(f"Error saving data to Supabase: {e}")
-        logger.error(f"Error uploading data to Supabase: {e}")
+        main_window.append_log(f"Error saving data: {e}")
+        logger.error(f"Error uploading data: {e}")
 
 @handle_errors(action=ErrorAction.RERAISE)
 def create_normalized_schema():

@@ -1,38 +1,36 @@
-# FILE: /LCR-Meter-Project/LCR-Meter-Project/gui/stylesheets.py
-
 """
 Centralized styling system for the LCR Meter application.
 This file contains all styles used throughout the application to ensure consistency.
 """
 
-# Theme colors - define once, use everywhere
+# Theme colors - modern palette with better contrast
 COLORS = {
     # Primary palette
-    "primary": "#4CAF50",
-    "primary_hover": "#45a049",
-    "primary_dark": "#3b8c3e",
+    "primary": "#2196F3",  # Material Blue
+    "primary_hover": "#1976D2",
+    "primary_dark": "#0D47A1",
     
     # Secondary actions
-    "secondary": "#2196F3",
-    "secondary_hover": "#1976D2",
+    "secondary": "#00BCD4",  # Material Cyan
+    "secondary_hover": "#0097A7",
     
     # Alerts/Status
-    "danger": "#F44336",
+    "danger": "#F44336",  # Material Red
     "danger_hover": "#D32F2F",
-    "warning": "#FFC107",
-    "success": "#4CAF50",
+    "warning": "#FF9800",  # Material Orange
+    "success": "#4CAF50",  # Material Green
     "info": "#2196F3",
     
     # Background colors
-    "bg_dark": "#2b2b2b",
-    "bg_medium": "#3c3c3c",
-    "bg_light": "#f0f0f0",
+    "bg_dark": "#303030",  # Darker but not too harsh
+    "bg_medium": "#424242",
+    "bg_light": "#f5f5f5",
     "bg_white": "#ffffff",
     
     # Border colors
-    "border_dark": "#555",
-    "border_medium": "#d3d3d3",
-    "border_light": "#e0e0e0",
+    "border_dark": "#616161",
+    "border_medium": "#e0e0e0",
+    "border_light": "#f0f0f0",
     
     # Text colors
     "text_dark": "#212121",
@@ -40,8 +38,9 @@ COLORS = {
     "text_light": "#ffffff",
 }
 
-# Font sizes - for consistency
+# Modern fonts - using system fonts for better platform integration
 FONTS = {
+    "family": "Segoe UI, Roboto, Helvetica, Arial, sans-serif",
     "small": "12px",
     "normal": "14px",
     "large": "16px",
@@ -50,12 +49,12 @@ FONTS = {
 
 # Common dimensions
 DIMENSIONS = {
-    "padding_small": "5px",
-    "padding_normal": "10px",
+    "padding_small": "8px",  # Slightly increased for more breathing space
+    "padding_normal": "12px",
     "padding_large": "20px",
-    "border_radius_small": "3px",
-    "border_radius_normal": "5px",
-    "border_radius_large": "10px",
+    "border_radius_small": "4px",  # More subtle rounding
+    "border_radius_normal": "6px",
+    "border_radius_large": "8px",
 }
 
 # Main application window stylesheet
@@ -66,6 +65,7 @@ MAIN_WINDOW_STYLESHEET = f"""
         color: {COLORS["text_light"]};
         padding: {DIMENSIONS["padding_normal"]};
         font-size: {FONTS["large"]};
+        font-family: {FONTS["family"]};
         border: none;
         border-radius: {DIMENSIONS["border_radius_normal"]};
     }}
@@ -73,18 +73,20 @@ MAIN_WINDOW_STYLESHEET = f"""
     QPushButton#stopButton {{
         background-color: {COLORS["danger"]};
         color: {COLORS["text_light"]};
-        padding: {DIMENSIONS["padding_normal"]};
-        font-size: {FONTS["large"]};
-        border: none;
-        border-radius: {DIMENSIONS["border_radius_normal"]};
+        font-family: {FONTS["family"]};
     }}
     QPushButton#stopButton:hover {{ background-color: {COLORS["danger_hover"]}; }}
-    QLabel {{ color: {COLORS["text_light"]}; font-size: {FONTS["normal"]}; }}
+    QLabel {{ 
+        color: {COLORS["text_light"]}; 
+        font-size: {FONTS["normal"]}; 
+        font-family: {FONTS["family"]};
+    }}
     QLineEdit {{
-        color: {COLORS["text_light"]};
+        color: {COLORS["text_dark"]};
         font-size: {FONTS["normal"]};
-        background-color: {COLORS["bg_medium"]};
-        border: 1px solid {COLORS["border_dark"]};
+        font-family: {FONTS["family"]};
+        background-color: {COLORS["bg_white"]};
+        border: 1px solid {COLORS["border_medium"]};
         padding: {DIMENSIONS["padding_small"]};
         border-radius: {DIMENSIONS["border_radius_small"]};
     }}
@@ -92,20 +94,38 @@ MAIN_WINDOW_STYLESHEET = f"""
         color: {COLORS["text_light"]};
         background-color: {COLORS["bg_medium"]};
         font-size: {FONTS["normal"]};
+        font-family: {FONTS["family"]};
+        padding: {DIMENSIONS["padding_small"]};
+        border-radius: {DIMENSIONS["border_radius_small"]};
+    }}
+    QComboBox {{
+        color: {COLORS["text_dark"]};
+        background-color: {COLORS["bg_white"]};
+        font-family: {FONTS["family"]};
+        padding: {DIMENSIONS["padding_small"]};
+        border: 1px solid {COLORS["border_medium"]};
+        border-radius: {DIMENSIONS["border_radius_small"]};
+        min-height: 25px;
     }}
 """
 
-# Start button styles
+# Start button styles - more prominent
 START_BUTTON_STYLESHEET = f"""
     QPushButton {{
         background-color: {COLORS["primary"]};
         color: {COLORS["text_light"]};
         padding: {DIMENSIONS["padding_large"]};
         font-size: {FONTS["xlarge"]};
+        font-family: {FONTS["family"]};
+        font-weight: bold;
         border: none;
         border-radius: {DIMENSIONS["border_radius_large"]};
+        box-shadow: 0 2px 5px rgba(0,0,0,0.2);
     }}
-    QPushButton:hover {{ background-color: {COLORS["primary_hover"]}; }}
+    QPushButton:hover {{ 
+        background-color: {COLORS["primary_hover"]};
+        box-shadow: 0 4px 8px rgba(0,0,0,0.3);
+    }}
 """
 
 START_BUTTON_RUNNING_STYLESHEET = f"""
