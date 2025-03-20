@@ -1,8 +1,44 @@
-# LCR Meter
+# LCR Meter Project v0.3.0
 
-## Overview
+A PyQt5-based application for measuring inductance (L) and resistance (R) using an LCR meter, with integrated database storage and Notion synchronization.
 
-The LCR Meter is a Python application designed to accurately perform inductance measurements on Noya's sorbent. Leveraging a PyQt5-based GUI, the app allows users to input test parameters and record measurement data directly to Google Sheets, ensuring efficient and reliable analysis for quality control and research.
+## Features
+
+- **Modern User Interface**
+
+  - Clean, responsive design with improved fonts and modern icons
+  - Detailed tooltips explaining each parameter and feature
+  - Splash screen and consistent styling throughout the app
+
+- **Real-time Measurements**
+
+  - Direct communication with LCR meters via VISA interface
+  - Configurable frequency, voltage, and timeout settings
+  - Series inductance (Ls) and resistance (Rs) measurements
+
+- **Data Management**
+
+  - Supabase database integration for secure storage
+  - Sample and measurement history browsing
+  - Normalized database schema for efficient data organization
+  - Export functionality for data analysis
+
+- **Notion Integration**
+
+  - Automatic syncing of measurement data to Notion databases
+  - Preserves sample resistance values for easy team collaboration
+  - Standalone sync utility to update Notion from Supabase records
+
+- **Quality Control**
+
+  - Measurement validation before database submission
+  - Warns about invalid or suspicious measurements
+  - User confirmation for questionable results
+  - Comprehensive error logging and handling
+
+- **Security**
+  - Environment-based configuration for credentials
+  - No hardcoded secrets in source code
 
 ## Project Structure
 
@@ -40,6 +76,15 @@ LCR-Meter-Project
 
 ## Installation
 
+### Prerequisites
+
+- Python 3.9 or higher
+- VISA-compatible LCR meter (e.g., Keysight E4980A)
+- Supabase account (for database storage)
+- Notion account (optional, for Notion integration)
+
+### Setup
+
 1. Clone the repository:
    ```
    git clone https://github.com/rick-noya/lcrMeter
@@ -62,13 +107,6 @@ LCR-Meter-Project
    ```
 3. Use the GUI to enter the sample name, tester name, frequency, voltage, and timeout.
 4. Click the "Start" button to begin the measurement sequence.
-
-## Features
-
-- Specialized inductance measurements tailored for Noya's sorbent samples and assemblages.
-- Measurements in henries and ohms.
-- Integration with Google Sheets for seamless data logging and analysis.
-- User-friendly GUI with custom numeric input dialogs for effortless parameter entry.
 
 ## Contributing
 

@@ -128,8 +128,8 @@ class LCRMeter:
                     Rs = float(values[1])
                     
                     # Basic sanity check on values (adjust thresholds as needed)
-                    if L < 0 or Rs < 0 or L > 1e6 or Rs > 1e6:
-                        raise ValueError(f"Measurement values out of expected range: L={L} H, Rs={Rs} Ω")
+                    if abs(L) > 1e6 or Rs < -1 or Rs > 1e6:  # Allow small negative L values
+                        raise ValueError(f"Measurement values out of expected range: L={L} H, Rs={Rs} ohm")
                     
                     return L, Rs
                 raise ValueError(f"Unexpected response format from LCR meter: {result}")
@@ -143,3 +143,14 @@ class LCRMeter:
                 else:
                     logger.error(f"Failed to measure Ls-Rs after {max_retries+1} attempts: {str(e)}")
                     return 0, 0  # Return zeros on complete failure
+
+    async def __aenter__(self):
+        """Async context manager entry - connect to the instrument."""
+        await self.connect()
+        return self
+        
+    async def __aexit__(self, exc_type, exc_val, exc_tb):
+        """Async context manager exit - ensure resources are properly cleaned up."""
+        self.close()
+        # Don't suppress exceptions
+        return False

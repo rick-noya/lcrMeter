@@ -21,7 +21,7 @@ def setup_logging():
             pass
     
     # Set up file handler
-    file_handler = logging.FileHandler(os.path.join(log_dir, LOG_FILE))
+    file_handler = logging.FileHandler(os.path.join(log_dir, LOG_FILE), encoding='utf-8')
     file_handler.setFormatter(logging.Formatter(LOG_FORMAT))
     
     # Only add console handler if we're not in a frozen app or explicitly want console

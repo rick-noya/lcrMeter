@@ -1,25 +1,43 @@
-# Python cache and compiled files
+# Python
 __pycache__/
 *.py[cod]
 *$py.class
-
-# Virtual environment
-venv/
+*.so
+.Python
 env/
-
-# Distribution / packaging
 build/
+develop-eggs/
 dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
 *.egg-info/
+.installed.cfg
+*.egg
+updatenotion.py
 
 # PyInstaller
+*.manifest
 *.spec
 
-# Logs and temporary files
-pip-log.txt
-pip-delete-this-directory.txt
+# Logs
 *.log
+logs/
+
+# Environment variables
+.env
+.env.local
+.env.development
+.env.test
+.env.production
+
+# VS Code
+.vscode/
 
 # IDE and editor folders
-.vscode/
 .idea/
