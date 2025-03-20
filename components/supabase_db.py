@@ -4,6 +4,7 @@ from datetime import datetime
 from typing import List, Any
 from supabase import create_client, Client
 import atexit
+from PyQt5.QtWidgets import QMessageBox
 
 from config.settings import (
     SUPABASE_URL, SUPABASE_KEY, SAMPLES_TABLE, MEASUREMENTS_TABLE,
